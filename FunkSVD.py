@@ -39,8 +39,11 @@ class FunkSVD(Recommender):
         self.test_split = test_split
         # test split method will be added
         if test_split:
-            self.train_data = train_data
-            self.test_data = test_data
+            train_size = int(test_portion * len(train_data))
+            np.random.shuffle(train_data)
+
+            self.train_data = train_data[:train_size]
+            self.test_data = train_data[train_size:]
         else:
             self.train_data = train_data
 
@@ -67,7 +70,6 @@ class FunkSVD(Recommender):
 
             # updating user and item features
             for user, item, rating in self.train_data:
-                # EMRE buraya REGULATION koyalım.
                 error = rating - \
                     np.dot(self.user_features[user], self.item_features[item])
                 # Use temp to update each item and user feature in sync.
@@ -75,8 +77,9 @@ class FunkSVD(Recommender):
 
                 # Update user and item feature for each user, item and rating pair
                 self.user_features[user] += self.learning_rate * \
-                    error * self.item_features[item]
-                self.item_features[item] += self.learning_rate * error * temp
+                    (error * self.item_features[item] - self.regularization * self.user_features[user])
+                self.item_features[item] += self.learning_rate * \
+                    (error * temp - self.regularization * self.item_features[item])
 
             # Get all of these below to their own method
             # Calculate errors
@@ -95,8 +98,8 @@ class FunkSVD(Recommender):
             # Save best features depending on test_error and reset counter
             if self.test_split and test_error < self.min_test_error:
                 self.min_test_error = test_error
-                best_user_features = copy.deepcopy(self.user_features)
-                best_item_features = copy.deepcopy(self.item_features)
+                self.best_user_features = copy.deepcopy(self.user_features)
+                self.best_item_features = copy.deepcopy(self.item_features)
 
                 error_counter = 0
             # Save best features if test data is False
@@ -166,3 +169,68 @@ class FunkSVD(Recommender):
             counter += 1
 
         return np.sqrt(total_error/counter)
+
+    def novelty(self,recommendation_list):
+        user_n = len(self.user_ids)
+        novelty = 0
+
+        for movie in recommendation_list:
+            # Calculate novelty for each item in the recommendation list
+            pop_item = self.train_data[self.train_data[:,1]==movie].shape[0]
+            novelty += 1 - (pop_item/user_n)
+
+        novelty = novelty/len(recommendation_list)
+
+        return novelty
+
+    def precision_recall_at_k(self,threshold,k):
+        user_true_pred = dict()
+        precision_k = dict()
+        recall_k = dict()
+
+        for row in self.test_data:
+
+            user_id = row[0]
+            item_id = row[1]
+            true_rating = row[2]
+
+            # Check the user in the test set also in the training set
+            if user_id not in self.user_features or item_id not in self.item_features:
+                continue
+
+
+            estimated_rating = np.dot(self.user_features[user_id],self.item_features[item_id])
+            try:
+                user_true_pred[user_id].append((true_rating, estimated_rating))
+
+            except KeyError:
+              # Create a dictionary with list as values
+                user_true_pred[user_id] = []
+                user_true_pred[user_id].append((true_rating, estimated_rating))
+
+
+        for user_id, rating in user_true_pred.items():
+
+            rating.sort(key=lambda x: x[1], reverse=True)
+
+            # Number of recommended items at k
+            recommended_c = sum((estimated >= threshold) for (_,estimated) in rating[:k])
+
+            # Number of relevant items 
+            relevant_c = sum((true >= threshold) for (true,_) in rating)
+
+            # Number of relevant and recommended items in top k
+            recommended_in_relevant = sum(((estimated >= threshold) and (true >= threshold))
+                                          for (true, estimated) in rating[:k])
+
+            # Precision at K
+            precision_k[user_id] = recommended_in_relevant / recommended_c if recommended_c != 0 else 0
+
+            # Recall at K
+            recall_k[user_id] = recommended_in_relevant / relevant_c if relevant_c != 0 else 0
+
+            # Precision and recall can then be averaged over all users
+            self.precision = sum(prec for prec in precision_k.values()) / len(precision_k)
+            self.recall = sum(rec for rec in recall_k.values()) / len(recall_k)
+
+        return print('Predicision@K: {}\nRecall@K: {}'.format(self.precision,self.recall))
