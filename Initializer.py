@@ -28,7 +28,9 @@ class initializer():
                 # if not valid method, return exception
             ['random', 'normal', 'he'].index(self.initalization_method)
 
-        except ValueError("Invalid initializer method. Choose among ['random','normal','he']")
+        except ValueError:
+            print(
+                "Invalid initializer method. Choose among ['random','normal','he']")
 
         else:
             self.item_features = {}

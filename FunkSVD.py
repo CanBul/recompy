@@ -1,5 +1,4 @@
 from Main import Recommender
-
 from Test import test
 import numpy as np
 from Initializer import initializer
@@ -30,6 +29,8 @@ class FunkSVD(Recommender):
         self.user_rated_items = {}
 
         for i, each in enumerate(train_data):
+
+            # item ve user id stringe çevirilecek.
 
             # keep which user already rated which item
             self.user_rated_items.setdefault(each[0], []).append(each[1])
