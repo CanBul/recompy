@@ -134,6 +134,15 @@ class FunkSVD(Recommender):
     def get_recommendation_for_new_user(self, user_ratings):
         pass
 
+    def user_prediction_for_same_movies(self, user_ratings):
+        result = {}
+        for key in user_ratings:
+            for user in self.best_user_features:
+                result.setdefault(user, []).append(
+                    np.dot(self.best_user_features[user], self.best_item_features[key]))
+
+        return result
+
     def get_similar_products(self, product_id, howMany=10):
 
         result_list = []
