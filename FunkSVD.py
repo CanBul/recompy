@@ -57,12 +57,12 @@ class FunkSVD(Recommender):
         if test_split:
             print('Your data has been split into train and test set.')
 
-    @staticmethod
-    def train_test_split(data, rated_count = 100, movie_ratio_to_be_splited = 0.3):
+    
+    def train_test_split(self, rated_count = 100, movie_ratio_to_be_splited = 0.3):
 
 
         # rating counts for each user
-        unique, counts = np.unique(data[:,0], return_counts=True)
+        unique, counts = np.unique(self.data[:,0], return_counts=True)
         user_value_counts = np.array((unique, counts)).T
 
         if (movie_ratio_to_be_splited >1) | (movie_ratio_to_be_splited <0):
@@ -82,7 +82,7 @@ class FunkSVD(Recommender):
 
             # remaning training users whose rating counts < rated_count (will be concatenated later)
             other_training_users = user_value_counts[user_value_counts[:,1]<=rated_count][:,0]
-            other_training_data = data[np.isin(data[:,0],other_training_users)]
+            other_training_data = self.data[np.isin(self.data[:,0],other_training_users)]
 
             # extracting training and test rows from test users' array
             train_data = np.array([0]*3).reshape(1,3)
@@ -90,7 +90,7 @@ class FunkSVD(Recommender):
             
             for user,count in test_users:
 
-                specific_user = data[data[:,0]==user]
+                specific_user = self.data[self.data[:,0]==user]
                 indexes = np.random.choice(len(specific_user), int(count), replace=False)
 
                 test = specific_user[indexes]
