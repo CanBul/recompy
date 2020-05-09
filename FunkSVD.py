@@ -91,7 +91,7 @@ class FunkSVD(Recommender):
             for user,count in test_users:
 
                 specific_user = data[data[:,0]==user]
-                indexes = np.random.choice(len(specific_user), count, replace=False)
+                indexes = np.random.choice(len(specific_user), int(count), replace=False)
 
                 test = specific_user[indexes]
                 train = np.delete(specific_user, indexes, 0)
