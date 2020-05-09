@@ -57,6 +57,56 @@ class FunkSVD(Recommender):
         if test_split:
             print('Your data has been split into train and test set.')
 
+    @staticmethod
+    def train_test_split(data, rated_count = 100, movie_ratio_to_be_splited = 0.3):
+
+
+        # rating counts for each user
+        unique, counts = np.unique(data[:,0], return_counts=True)
+        user_value_counts = np.array((unique, counts)).T
+
+        if (movie_ratio_to_be_splited >1) | (movie_ratio_to_be_splited <0):
+            raise ValueError('movie_ratio_to_be_splited must be between 0 and 1')
+
+        elif (rated_count < 0) | (rated_count >= user_value_counts[:1,].max()):
+            raise ValueError(f'rated_count must be positive and can not exceed the number of rated movies of the user who rated the most.\nFor the data set used, the number is {user_value_counts[:1,].max()}')
+
+        else:
+
+
+            # determining test users - test_users are the ones whose user_value_counts > rated_count
+            # test_users array contains user id and rating count to be included in test set
+            # remaning ratings for same user will be included in training set
+            test_users = user_value_counts[user_value_counts[:,1]>rated_count]
+            test_users[:,1] = np.round(test_users[:,1]*movie_ratio_to_be_splited).astype(int)
+
+            # remaning training users whose rating counts < rated_count (will be concatenated later)
+            other_training_users = user_value_counts[user_value_counts[:,1]<=rated_count][:,0]
+            other_training_data = data[np.isin(data[:,0],other_training_users)]
+
+            # extracting training and test rows from test users' array
+            train_data = np.array([0]*3).reshape(1,3)
+            test_data = np.array([0]*3).reshape(1,3)
+            
+            for user,count in test_users:
+
+                specific_user = data[data[:,0]==user]
+                indexes = np.random.choice(len(specific_user), count, replace=False)
+
+                test = specific_user[indexes]
+                train = np.delete(specific_user, indexes, 0)
+
+                train_data = np.concatenate((train_data, train))
+                test_data = np.concatenate((test_data, test))
+
+            train_data = np.delete(train_data, 0, 0)
+            test_data = np.delete(test_data, 0, 0)
+
+            # concatenating training rows 
+            train_data = np.concatenate((train_data, other_training_data ))
+
+            return train_data, test_data
+
     def fit(self):
         print('Initializing features for Users and Items...')
         initial = initializer(self.user_ids, self.item_ids, self.initialization_method,
