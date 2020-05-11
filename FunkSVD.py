@@ -2,17 +2,20 @@ from Main import Recommender
 from Test import test
 import numpy as np
 from Initializer import initializer
+from numpy import genfromtxt
+from numpy.linalg import norm
 import copy
 import bisect
 
 
 class FunkSVD(Recommender):
-    def __init__(self, unary=False):
+    def __init__(self, data, unary=False):
         # Initialize all hyperparameters
+        self.data = data
         self.unary = unary
         self.set_hyperparameters()
 
-    def set_hyperparameters(self, initialization_method='random', max_epoch=30, n_latent=10, learning_rate=0.01, regularization=0.1, early_stopping=False, init_mean=0, init_std=1):
+    def set_hyperparameters(self, initialization_method='random', max_epoch=1, n_latent=10, learning_rate=0.01, regularization=0.1, early_stopping=False, init_mean=0, init_std=1):
         self.initialization_method = initialization_method
         self.max_epoch = max_epoch
         self.n_latent = n_latent
@@ -26,6 +29,7 @@ class FunkSVD(Recommender):
         self.min_test_error = np.inf
 
     def train(self, train_data, test_split=False, test_portion=0.1):
+        """
         self.user_rated_items = {}
 
         for i, each in enumerate(train_data):
@@ -46,6 +50,8 @@ class FunkSVD(Recommender):
             self.test_data = train_data[train_size:]
         else:
             self.train_data = train_data
+        """
+        self.test_split = test_split
 
         # get distinct users
         self.user_ids = np.unique(train_data[:, 0])
@@ -57,13 +63,15 @@ class FunkSVD(Recommender):
         if test_split:
             print('Your data has been split into train and test set.')
 
-    @staticmethod
-    def train_test_split(data, rated_count = 100, movie_ratio_to_be_splited = 0.3):
 
+    def train_test_split(self, rated_count = 100, movie_ratio_to_be_splited = 0.3, test_split = True):
 
         # rating counts for each user
-        unique, counts = np.unique(data[:,0], return_counts=True)
+        unique, counts = np.unique(self.data[:,0], return_counts=True)
         user_value_counts = np.array((unique, counts)).T
+
+        ## temporary addition
+        self.test_split = test_split
 
         if (movie_ratio_to_be_splited >1) | (movie_ratio_to_be_splited <0):
             raise ValueError('movie_ratio_to_be_splited must be between 0 and 1')
@@ -72,8 +80,6 @@ class FunkSVD(Recommender):
             raise ValueError(f'rated_count must be positive and can not exceed the number of rated movies of the user who rated the most.\nFor the data set used, the number is {user_value_counts[:1,].max()}')
 
         else:
-
-
             # determining test users - test_users are the ones whose user_value_counts > rated_count
             # test_users array contains user id and rating count to be included in test set
             # remaning ratings for same user will be included in training set
@@ -82,15 +88,15 @@ class FunkSVD(Recommender):
 
             # remaning training users whose rating counts < rated_count (will be concatenated later)
             other_training_users = user_value_counts[user_value_counts[:,1]<=rated_count][:,0]
-            other_training_data = data[np.isin(data[:,0],other_training_users)]
+            other_training_data = self.data[np.isin(self.data[:,0],other_training_users)]
 
             # extracting training and test rows from test users' array
             train_data = np.array([0]*3).reshape(1,3)
             test_data = np.array([0]*3).reshape(1,3)
-            
+
             for user,count in test_users:
 
-                specific_user = data[data[:,0]==user]
+                specific_user = self.data[self.data[:,0]==user]
                 indexes = np.random.choice(len(specific_user), int(count), replace=False)
 
                 test = specific_user[indexes]
@@ -102,18 +108,24 @@ class FunkSVD(Recommender):
             train_data = np.delete(train_data, 0, 0)
             test_data = np.delete(test_data, 0, 0)
 
-            # concatenating training rows 
+            # concatenating training rows
             train_data = np.concatenate((train_data, other_training_data ))
+
+            # get distinct users
+            self.user_ids = np.unique(train_data[:, 0])
+            # get distinct items
+            self.item_ids = np.unique(train_data[:, 1])
 
             return train_data, test_data
 
     def fit(self):
+        self.train_data, self.test_data = self.train_test_split()
+
         print('Initializing features for Users and Items...')
         initial = initializer(self.user_ids, self.item_ids, self.initialization_method,
                               self.n_latent, self.init_mean, self.init_std)
 
         self.user_features, self.item_features = initial.initialize_latent_vectors()
-
         print('Starting training...')
         error_counter = 0
         for epoch in range(self.max_epoch):
@@ -184,8 +196,25 @@ class FunkSVD(Recommender):
 
         return [x[1] for x in result_list[::-1][0:howMany]]
 
-    def get_recommendation_for_new_user(self, user_ratings):
-        pass
+    def get_recommendation_for_new_user(self, user_ratings,
+                    similarity_measure, howManyUsers = 3, howManyItems = 5):
+        user_ids = self.get_most_similar_users(user_ratings, similarity_measure, howManyUsers)[:,0]
+        result_list = []
+        # get user features for users who are most similar to given new user
+        most_similar_user_features = {user_id: self.user_features[user_id] for user_id in user_ids}
+        for user, user_feature in most_similar_user_features.items():
+            for item, item_feature in self.item_features.items():
+                # predict ratings for most similar users
+                prediction = np.dot(
+                    user_feature, item_feature)
+                bisect.insort(result_list, [prediction, item])
+        # sort predictions based on ratings
+        temp = np.asarray(result_list, dtype=np.float32)
+        recommendations = temp[temp[:,0].argsort()[::-1]]
+        # get howMany items
+        recommendations = recommendations[0:howManyItems,]
+        recommendations = recommendations[:,1]
+        return recommendations
 
     def user_prediction_for_same_movies(self, user_ratings):
         result = {}
@@ -195,6 +224,87 @@ class FunkSVD(Recommender):
                     np.dot(self.best_user_features[user], self.best_item_features[key]))
 
         return result
+
+    def cosine_similarity(self, a, b):
+        print(a)
+        print(b)
+        return 1 - np.dot(a, b)/(norm(a)*norm(b))
+
+
+    def pearson_correlation(self,a,b):
+        corr = np.corrcoef(a,b)[0,1]
+        return corr
+
+
+    def weighted_cosine_similarity(self, a, b):
+        shared_item_count = len(a)
+        cosine_similarity = np.dot(a, b)/(norm(a)*norm(b))
+        weighted_cosine_similarity = cosine_similarity * (1 / (1+np.exp(-1*shared_item_count)))
+        return 1 - weighted_cosine_similarity
+
+
+    def adjusted_cosine_similarity(self, a, b):
+        mean_response = sum(sum(a, b)) / (2*len(a))
+        a = a - mean_response
+        b = b - mean_response
+        return 1 - np.dot(a, b)/(norm(a)*norm(b))
+
+
+    def mean_squared_difference(self, a, b):
+        summation = 0
+        n = len(a)
+        for i in range (0,n):
+          difference = a[i] - b[i]
+          squared_difference = difference**2
+          summation = summation + squared_difference
+        MSE = summation/n
+        return 1/MSE
+
+
+    def constrained_pearson_correlation(self, a, b):
+        median_a = np.median(a)
+        median_b = np.median(b)
+        nominator = np.dot((a - median_a), (b - median_b))
+        denominator1 = np.sqrt(np.dot((a - median_a), (a - median_a)))
+        denominator2 = np.sqrt(np.dot((b - median_b), (b - median_b)))
+        denominator = denominator1 * denominator2
+        cpc = nominator / denominator
+        return cpc
+
+
+    def squared_error(self,a, b):
+        a = np.array(a)
+        b = np.array(b)
+        difference = a-b
+        squared_error = sum(difference**2)
+        return 1/squared_error
+
+
+    def get_most_similar_users(self, user_ratings, similarity_measure, howMany):
+        similarities = []
+        user_predictions = self.user_prediction_for_same_movies(user_ratings)
+        for user, ratings in user_predictions.items():
+            if similarity_measure == 'cosine_similarity':
+                similarity = self.cosine_similarity(list(user_ratings.values()), ratings)
+            elif similarity_measure == 'pearson_correlation':
+                similarity = self.pearson_correlation(list(user_ratings.values()), ratings)
+            elif similarity_measure == 'adjusted_cosine_similarity':
+                similarity = self.adjusted_cosine_similarity(list(user_ratings.values()), ratings)
+            elif similarity_measure == 'weighted_cosine_similarity':
+                similarity = self.weighted_cosine_similarity(list(user_ratings.values()), ratings)
+            elif similarity_measure == 'constrained_pearson_correlation':
+                similarity = self.weighted_cosine_similarity(list(user_ratings.values()), ratings)
+            elif similarity_measure == 'mean_squared_difference':
+                similarity = self.mean_squared_difference(list(user_ratings.values()), ratings)
+            elif similarity_measure == 'constrained_pearson_correlation':
+                similarity = self.constrained_pearson_correlation(list(user_ratings.values()), ratings)
+            similarities.append([user, similarity])
+
+        temp = np.asarray(similarities, dtype=np.float32)
+        similarities = temp[temp[:,1].argsort()[::-1]]
+        similarities = similarities[0:howMany,]
+        return similarities
+
 
     def get_similar_products(self, product_id, howMany=10):
 
@@ -275,7 +385,7 @@ class FunkSVD(Recommender):
             # Number of recommended items at k
             recommended_c = sum((estimated >= threshold) for (_,estimated) in rating[:k])
 
-            # Number of relevant items 
+            # Number of relevant items
             relevant_c = sum((true >= threshold) for (true,_) in rating)
 
             # Number of relevant and recommended items in top k
@@ -293,3 +403,15 @@ class FunkSVD(Recommender):
             self.recall = sum(rec for rec in recall_k.values()) / len(recall_k)
 
         return print('Predicision@K: {}\nRecall@K: {}'.format(self.precision,self.recall))
+
+data = genfromtxt('/Users/boyaronur/Desktop/recompy-master/data/movielens100k.csv', delimiter=',')
+myFunk = FunkSVD(data)
+myFunk.set_hyperparameters()
+myFunk.fit()
+new_user = {242:4,
+            302: 5,
+            377: 4}
+#user_similarities = myFunk.get_most_similar_users(new_user, 'cosine_similarity', 3)
+#user_ids = user_similarities[:,0]
+#print(user_ids)
+myFunk.get_recommendation_for_new_user(new_user,'cosine_similarity',3)
