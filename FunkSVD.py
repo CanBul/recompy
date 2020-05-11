@@ -64,6 +64,7 @@ class FunkSVD(Recommender):
             print('Your data has been split into train and test set.')
 
 
+
     def train_test_split(self, rated_count = 100, movie_ratio_to_be_splited = 0.3, test_split = True):
 
         # rating counts for each user
