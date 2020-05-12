@@ -4,10 +4,6 @@ from abc import ABC, abstractmethod
 class Recommender(ABC):
 
     @abstractmethod
-    def train(self, train_data, test_data):
-        pass
-
-    @abstractmethod
     def set_hyperparameters(self, all_hyperparameters):
         pass
 
