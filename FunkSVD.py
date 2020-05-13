@@ -1,20 +1,17 @@
 # import library files
-from Main import Recommender
 from Test import Test
 from Initializer import initializer
 from Similarities import Similarities
-from Train_test_split import train_test_split
 
 # import other libraries
 import numpy as np
-from numpy.linalg import norm
 import copy
 import bisect
 
 
-class FunkSVD(Recommender):
+class FunkSVD():
     def __init__(self):
-        # Initialize all hyperparameters
+        # Initialize default hyperparameters
         self.set_hyperparameters()
 
     def set_hyperparameters(self, initialization_method='random', max_epoch=5, n_latent=10, learning_rate=0.01, regularization=0.1, early_stopping=False, init_mean=0, init_std=1):
@@ -32,8 +29,8 @@ class FunkSVD(Recommender):
 
     def __set_data(self, data, test_portion):
 
-        # get distinct users, items and user_existing_ratings, item_existing_users
-        self.user_rated_items = {}
+        # get distinct users, items and user_existing_ratings, items_existing_users
+        self.user_existing_ratings = {}
         self.items_rated_by_users = {}
         self.user_ids = []
         self.item_ids = []
@@ -49,21 +46,26 @@ class FunkSVD(Recommender):
         for user, item, score in data:
             # Unique users and items
 
-            if type(user) == np.float64:
+            try:
                 user = int(user)
-            if type(item) == np.float64:
+            except:
+                pass
+            try:
                 item = int(item)
+            except:
+                pass
+
             user = str(user)
             item = str(item)
             score = float(score)
 
-            if user not in self.user_rated_items:
+            if user not in self.user_existing_ratings:
                 self.user_ids.append(user)
             if item not in self.items_rated_by_users:
                 self.item_ids.append(item)
 
             self.items_rated_by_users.setdefault(item, []).append(user)
-            self.user_rated_items.setdefault(user, []).append(item)
+            self.user_existing_ratings.setdefault(user, []).append(item)
 
             if self.test_split:
                 # train and test set
@@ -98,8 +100,9 @@ class FunkSVD(Recommender):
     def fit(self, data, test_split=True, test_portion=0.1, search_parameter_space=False):
 
         # Set train_data, test_data, user_ids etc. if search parameter is False
-        # This lets us search parameter space with train-test split
+        # If True, this lets us search parameter space with the same train-test split
         if not search_parameter_space:
+
             self.test_split = test_split
             self.__set_data(data, test_portion)
 
@@ -178,7 +181,7 @@ class FunkSVD(Recommender):
         # this might be more effective using matrix multiplication
         for item in self.item_ids:
             # if user did not already rate the item
-            if item not in self.user_rated_items[user_id]:
+            if item not in self.user_existing_ratings[user_id]:
                 prediction = np.dot(
                     self.user_features[user_id], self.item_features[item])
                 bisect.insort(result_list, [prediction, item])
@@ -186,7 +189,7 @@ class FunkSVD(Recommender):
         return [x[1] for x in result_list[::-1][0:howMany]]
 
     def get_recommendation_for_new_user(self, user_ratings,
-                                        similarity_measure='cosine_similarity', howManyUsers=3, howManyItems=5):
+                                        similarity_measure='mean_squared_difference', howManyUsers=3, howManyItems=5):
 
         # Get user predictions on same movies
         user_predictions = self.__user_prediction_for_same_movies(user_ratings)
@@ -233,16 +236,3 @@ class FunkSVD(Recommender):
                     np.dot(self.user_features[user], self.item_features[key]))
 
         return result
-
-
-# data = np.genfromtxt('./data/movielens100k.csv', delimiter=',')
-# myFunk = FunkSVD()
-# myFunk.set_hyperparameters(early_stopping=5)
-# myFunk.fit(data, test_split=True, test_portion=0.1)
-# new_user = {'242': 4,
-#             '302': 5,
-#             '377': 4}
-# #user_similarities = myFunk.get_most_similar_users(new_user, 'cosine_similarity', 3)
-# #user_ids = user_similarities[:,0]
-# # print(user_ids)
-# myFunk.get_recommendation_for_new_user(new_user, 'cosine_similarity', 3)

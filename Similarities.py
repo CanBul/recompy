@@ -75,7 +75,7 @@ class Similarities():
             summation = summation + squared_difference
         MSE = summation/n
 
-        return MSE
+        return 1/MSE
 
     @staticmethod
     def constrained_pearson_correlation(a, b):
