@@ -67,12 +67,14 @@ class FunkSVD():
             self.items_rated_by_users.setdefault(item, []).append(user)
             self.user_existing_ratings.setdefault(user, []).append(item)
 
+            ratio = len(self.test_data) / (len(self.train_data)+0.001)
+
             if self.test_split:
                 # train and test set
                 user_dictionary.setdefault(user, 0)
                 item_dictionary.setdefault(item, 0)
 
-                if user_dictionary[user] * test_portion >= 1 and item_dictionary[item] * test_portion >= 1:
+                if user_dictionary[user] * test_portion >= 1 and item_dictionary[item] * test_portion >= 1 and ratio <= test_portion+0.02:
 
                     self.test_data.append([user, item, score])
 
@@ -90,12 +92,20 @@ class FunkSVD():
         print('Your data has {} distinct users and {} distinct items.'.format(
             len(self.user_ids), len(self.item_ids)))
 
+        if len(self.test_data) < 1 and self.test_split:
+            self.test_split = False
+            self.early_stopping = False
+            print("Training set doesn't have enough data for given test portion.")
+
         if self.test_split:
 
             print('Your data has been split into train and test set.')
+            print('Length of training set is {}. Length of Test set is {}'.format(
+                len(self.train_data), len(self.test_data)))
         else:
 
             print('Your data has no test set.')
+            print('Length of training set is {}'.format(len(self.train_data)))
 
     def fit(self, data, test_split=True, test_portion=0.1, search_parameter_space=False):
 
@@ -153,15 +163,15 @@ class FunkSVD():
             # Save best features depending on test_error
             if self.test_split and test_error < self.min_test_error:
                 self.min_test_error = test_error
-                best_user_features = copy.deepcopy(self.user_features)
-                best_item_features = copy.deepcopy(self.item_features)
+                self.best_user_features = copy.deepcopy(self.user_features)
+                self.best_item_features = copy.deepcopy(self.item_features)
 
                 error_counter = 0
             # Save best features if test data is False
             elif not self.test_split and train_error < self.min_train_error:
                 self.min_train_error = train_error
-                best_user_features = copy.deepcopy(self.user_features)
-                best_item_features = copy.deepcopy(self.item_features)
+                self.best_user_features = copy.deepcopy(self.user_features)
+                self.best_item_features = copy.deepcopy(self.item_features)
 
             # Break if test_error didn't improve for the last n rounds and early stopping is true
             if self.early_stopping and error_counter >= self.early_stopping:
@@ -173,8 +183,8 @@ class FunkSVD():
                 break
 
         print('Training has ended...')
-        self.user_features = copy.deepcopy(best_user_features)
-        self.item_features = copy.deepcopy(best_item_features)
+        self.user_features = copy.deepcopy(self.best_user_features)
+        self.item_features = copy.deepcopy(self.best_item_features)
 
     def get_recommendation_for_existing_user(self, user_id, howMany=10):
         result_list = []
