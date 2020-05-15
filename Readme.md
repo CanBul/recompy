@@ -28,7 +28,7 @@ new_user = {'1':5,
             '2':4,
             '4':3}
             
-# To find the most similar user resulting from cosine similarity on recommend 5 items accordingly
+# To find the most similar user resulting from cosine similarity. Recommend 5 items using the most similar user 
 myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_similarity', 
                                        howManyUsers = 1, howManyItems = 5)
 ```
