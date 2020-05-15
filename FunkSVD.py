@@ -216,7 +216,17 @@ class FunkSVD():
                     self.user_features[user], item_feature)
                 bisect.insort(result_list, [prediction, item])
 
-        return [x[1] for x in result_list[::-1][:howManyItems]]
+        # remove duplicates
+        return_list = []
+        for pair in result_list:
+            if len(return_list) >= howManyItems:
+                break
+            if pair[1] in return_list:
+                continue
+
+            return_list.append(pair[1])
+
+        return return_list
 
     def get_similar_products(self, product_id, howMany=10):
 
