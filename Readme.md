@@ -29,7 +29,7 @@ myFunk.get_recommendation_for_new_user(new_user)
 ## Functions
 
 _set_hyperparameters(initialization_method, max_epoch, n_latent,_
-_learning_rate, regularization, early_stopping, init_mean_ init_sd):*
+_learning_rate, regularization, early_stopping, init_mean_ init_sd):
 A function to set hyperparameters. Available initialization techniques are: Random initializer, Normal initializer and He initializer. init_mean and init_sd parameters are used in Normal Initializer as mean and standard deviation.
 
 _train_test_split(rated_count, movie_ratio_to_be_splitted, test_split):_
