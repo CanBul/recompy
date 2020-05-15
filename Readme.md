@@ -1,4 +1,4 @@
-#Recompy
+# Recompy
 
 Recompy is a library for recommender systems. It provides an easy framework to train models, calculate similarities, showing recommendations.
 
