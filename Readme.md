@@ -4,6 +4,26 @@ Recompy is a library for recommender systems. It provides an easy framework to t
 
 Recompy shows the train end test errors in each epoch. After a new user is created by defining item id and rating, recommendation can simply obtained. Recompy uses FunkSVD algorithm to train recommender system model. Multiple similarity metrics can be used to calculate user similarity for any given new user.
 
+Recompy comes with MovieLens data.
+
+# Installation
+
+pip install recompy
+
+# Usage
+
+```python
+from recompy import load_movie_data, FunkSVD
+
+data = load_movie_data()
+myFunk = FunkSVD()
+myFunk.fit(data)
+new_user = {'1':5,
+           '2':4,
+           '4':3}
+myFunk.get_recommendation_for_new_user(new_user)
+```
+
 ## Functions
 
 _set_hyperparameters(initialization_method, max_epoch, n_latent,_
