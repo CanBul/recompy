@@ -16,14 +16,21 @@ pip install recompy
 ```python
 from recompy import load_movie_data, FunkSVD
 
+# get MovieLens data
 data = load_movie_data()
+# initialization of FunkSVD model
 myFunk = FunkSVD()
+# training of the model
 myFunk.fit(data)
 
+# Create new user
 new_user = {'1':5,
             '2':4,
             '4':3}
-myFunk.get_recommendation_for_new_user(new_user)
+            
+# To find the most similar user resulting from cosine similarity on recommend 5 items accordingly
+myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_similarity', 
+                                       howManyUsers = 1, howManyItems = 5)
 ```
 
 ## Functions
