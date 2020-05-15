@@ -23,7 +23,7 @@ myFunk = FunkSVD()
 # training of the model
 myFunk.fit(data)
 
-# Create new user
+# Create new user. Key:Item ID, Value:Rating
 new_user = {'1':5,
             '2':4,
             '4':3}
