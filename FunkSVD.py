@@ -228,14 +228,14 @@ class FunkSVD():
 
         return return_list
 
-    def get_similar_products(self, product_id, howMany=10):
+    def get_similar_products(self, item_id, howMany=10):
 
         result_list = []
-        product_features = self.item_features[product_id]
+        product_features = self.item_features[item_id]
 
         for item in self.item_ids:
 
-            if item == product_id:
+            if item == item_id:
                 continue
             # add cosine sim function from similarites
             cos_sim = Similarities.cosine_similarity(
