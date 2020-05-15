@@ -22,9 +22,7 @@ _get_recommendation_for_existing_user(user_id, howMany):_
 Gets howMany recommendations for given user_id.
 
 _get_recommendation_for_new_user(user_ratings, similarity_measure,_
-_howManyUsers, howManyItems)_
-
-Gets recommendations for new user by a given similarity measure. Similarity measures can be Cosine Similarity, Pearson Correlation, Adjusted Cosine Similarity, Weighted Cosine Similarity, Constrained Pearson Correlation, Mean Squared Difference.
+_howManyUsers, howManyItems):_ Gets recommendations for new user by a given similarity measure. Similarity measures can be Cosine Similarity, Pearson Correlation, Adjusted Cosine Similarity, Weighted Cosine Similarity, Constrained Pearson Correlation, Mean Squared Difference.
 
 _get_similar_products(product_id, howMany):_
 Gets howMany similar products to a given product.
