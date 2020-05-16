@@ -61,4 +61,4 @@ _precision_recall_at_k(threshold, k):_
 Returns precision and recall values of recommended items at k.
 
 ### Note
-This work is created as a part of AI Projects program @ inzva. You can see more at inzva.com
+This library is created as a part of AI Projects program @ inzva. You can see more at inzva.com
