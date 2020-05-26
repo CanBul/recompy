@@ -43,63 +43,63 @@ myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_si
 
 ## Available Methods for FunkSVD
 
-### set_hyperparameters():
+> ### set_hyperparameters():
 
-A method to set hyperparameters for searching parameter space. Arguments:
+>>A method to set hyperparameters for searching parameter space. Arguments:
 
->__initialization_method :__  How to initialize user and item embeddings
-> * random ( default )
-> * he
-> * normal
+>>__initialization_method :__  How to initialize user and item embeddings
+>> * random ( default )
+>> * he
+>> * normal
 
-> __max_epoch :__ Epoch count to train model. Default is 5.\
-> __n_latent :__ Length of user and item embeddings. Default is 10\
-> __learning_rate :__ Learning rate of the model. Default is 0.01\
-> __regularization :__ Regularization rate of the model. DEfault is 0.1\
-> __early_stopping :__ Number of epochs to stop if test error doesn't improve. Default is False.\
-> __init_mean :__ Initialization mean if initialization method is normal.\
-> __init_std :__ Initialization standard deviation if initialization is normal\
+>> __max_epoch :__ Epoch count to train model. Default is 5.\
+>> __n_latent :__ Length of user and item embeddings. Default is 10\
+>> __learning_rate :__ Learning rate of the model. Default is 0.01\
+>> __regularization :__ Regularization rate of the model. DEfault is 0.1\
+>> __early_stopping :__ Number of epochs to stop if test error doesn't improve. Default is False.\
+>> __init_mean :__ Initialization mean if initialization method is normal.\
+>> __init_std :__ Initialization standard deviation if initialization is normal\
 
 
-### fit():
+>### fit():
 
-Trains FunkSVD model.Arguments:
+>>Trains FunkSVD model.Arguments:
 
-> __data__ : Training data as numpy array.\
-> __test_split__ : Split data into train and test set. Default is True.
-> __test_portion__ : Portion of test set. Default is 0.10.
-> __search_parameter_space__ : If true, data will not split into train and test sets again.  
+>> __data__ : Training data as numpy array.\
+>> __test_split__ : Split data into train and test set. Default is True.
+>> __test_portion__ : Portion of test set. Default is 0.10.
+>> __search_parameter_space__ : If true, data will not split into train and test sets again.  
 
-### get_recommendation_for_existing_user():
+>### get_recommendation_for_existing_user():
 
-Gets recommendations for existing user that are not rated by user. Arguments:
-> __user_id :__ Existing user id
+>>Gets recommendations for existing user that are not rated by user. Arguments:
+>> __user_id :__ Existing user id
 
-> __howMany :__ Count of recommended items to be returned. Default is 10.
+>> __howMany :__ Count of recommended items to be returned. Default is 10.
 
-### get_recommendation_for_new_user(): 
+>### get_recommendation_for_new_user(): 
 
-Gets recommendations for new user depending on given similarity measure. Arguments:
+>>Gets recommendations for new user depending on given similarity measure. Arguments:
 
-> __user_ratings :__ A python dictionary of items and corresponding scores.
+>> __user_ratings :__ A python dictionary of items and corresponding scores.
 
-> __similarity_measure :__ Similarity measures can be:
-> * cosine_similarity
-> * pearson_correlation
-> * adjusted_cosine_similarity
-> * weighted_cosine_similarity
-> * constrained_pearson_correlation
-> * mean_squared_difference ( default )
+>> __similarity_measure :__ Similarity measures can be:
+>> * cosine_similarity
+>> * pearson_correlation
+>> * adjusted_cosine_similarity
+>> * weighted_cosine_similarity
+>> * constrained_pearson_correlation
+>> * mean_squared_difference ( default )
 
-> __howManyUsers :__ Count of most similar users to be used for recommendation. Default is 3
+>> __howManyUsers :__ Count of most similar users to be used for recommendation. Default is 3
 
-> __howManyItems :__ Count of recommended items to be returned. Default is 5.
+>> __howManyItems :__ Count of recommended items to be returned. Default is 5.
 
-### get_similar_products():
-Gets most similar items. Arguments:
-> __item_id :__ Id of the item.
+>### get_similar_products():
+>>Gets most similar items. Arguments:
+>> __item_id :__ Id of the item.
 
-> __howMany :__ Count of similar items to be returned.
+>> __howMany :__ Count of similar items to be returned.
 
 
 ### Note
