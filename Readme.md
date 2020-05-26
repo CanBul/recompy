@@ -76,6 +76,7 @@ Trains FunkSVD model.Arguments:
 
 Gets recommendations for existing user that are not rated by user. Arguments:
 > __user_id :__ Existing user id
+
 > __howMany :__ Count of recommended items to be returned. Default is 10.
 
 ### get_recommendation_for_new_user(): 
