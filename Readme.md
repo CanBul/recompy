@@ -48,17 +48,18 @@ myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_si
 ### set_hyperparameters():
 A method to set hyperparameters for searching parameter space. 
 Arguments are:\
-initialization_method : how to initialize user and item embeddings\
+__initialization_method :__  how to initialize user and item embeddings
 * random ( default )
 * he
 * normal
-max_epoch : Epoch count to train model. Default is 5.\
-n_latent : Length of user and item embeddings. Default is 10\
-learning_rate : Learning rate of the model. Default is 0.01\
-regularization : Regularization rate of the model. DEfault is 0.1\
-early_stopping : Number of epochs to stop if test error doesn't improve. Default is False.\
-init_mean: initialization mean if initialization method is normal.\
-init_std: initialization standard deviation if initialization is normal\
+
+__max_epoch :__ Epoch count to train model. Default is 5.\
+__n_latent :__ Length of user and item embeddings. Default is 10\
+__learning_rate :__ Learning rate of the model. Default is 0.01\
+__regularization :__ Regularization rate of the model. DEfault is 0.1\
+__early_stopping :__ Number of epochs to stop if test error doesn't improve. Default is False.\
+__init_mean :__ initialization mean if initialization method is normal.\
+__init_std :__ initialization standard deviation if initialization is normal\
 
 _train_test_split(rated_count, movie_ratio_to_be_splitted, test_split):_
 A function to perform train test split.
