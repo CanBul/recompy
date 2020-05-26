@@ -2,7 +2,7 @@
 
 Recompy is a library for recommender systems. It provides an easy framework to train different models, calculate similarities and recommend items for both existing and new users.
 
-Recompy comes bundled with MovieLens data which consists of 100.000 user and rating pair.
+Recompy comes bundled with MovieLens data which consists of 100.000 user, rating pair.
 
 Recompy is a fairly optimized and lightweight library. Its only dependency is numpy library which is downloaded automatically when you pip install recompy. This feature is useful if you decide to run recompy on server side.
 
@@ -13,7 +13,7 @@ Current version supports algorithms below:
 * KNN
 * NMF
 * SVD++
-* Uniform Random
+* RUS
 * ALS
 
 
