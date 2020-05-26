@@ -47,7 +47,7 @@ myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_si
 
 ### set_hyperparameters():
 
-A method to set hyperparameters for searching parameter space. Arguments:\
+A method to set hyperparameters for searching parameter space. Arguments:
 
 __initialization_method :__  How to initialize user and item embeddings
 * random ( default )
@@ -65,7 +65,7 @@ __init_std :__ Initialization standard deviation if initialization is normal\
 
 ### fit():
 
-Trains FunkSVD model.Arguments:\
+Trains FunkSVD model.Arguments:
 
 __data__ : Training data as numpy array.\
 __test_split__ : Split data into train and test set. Default is True.
@@ -74,13 +74,13 @@ __search_parameter_space__ : If true, data will not split into train and test se
 
 ### get_recommendation_for_existing_user():
 
-Gets recommendations for existing user that are not rated by user. Arguments:\
+Gets recommendations for existing user that are not rated by user. Arguments:
 __user_id :__ Existing user id
 __howMany :__ Count of recommended items to be returned. Default is 10.
 
 ### get_recommendation_for_new_user(): 
 
-Gets recommendations for new user depending on given similarity measure. Arguments:\
+Gets recommendations for new user depending on given similarity measure. Arguments:
 
 __user_ratings :__ A python dictionary of items and corresponding scores.
 
@@ -93,11 +93,13 @@ __similarity_measure :__ Similarity measures can be:
 * Mean Squared Difference.
 
 __howManyUsers :__ Count of most similar users to be used for recommendation. Default is 3
+
 __howManyItems :__ Count of recommended items to be returned. Default is 5.
 
 ### get_similar_products():
 Gets most similar items. Arguments:
 __item_id :__ Id of the item.
+
 __howMany :__ Count of similar items to be returned.
 
 
