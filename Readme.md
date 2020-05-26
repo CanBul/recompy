@@ -10,10 +10,10 @@ Recompy lets you search parameter space for finding the best model for your data
 
 Current version supports algorithms below:
 * FunkSVD
-* KNN
+* NearestNeighbour
 * NMF
 * SVD++
-* RUS
+
 * ALS
 
 
