@@ -9,12 +9,12 @@ Recompy is a fairly optimized and lightweight library. Its only dependency is nu
 Recompy lets you search parameter space for finding the best model for your data. It keeps best features in memory depending on the test set error. Early stopping is also available. When it is set to an integer, training will be stopped if test set error doesn't improve for the last given epochs.  
 
 Current version supports algorithms below:
--FunkSVD
--KNN
--NMF
--SVD++
--Uniform Random
--ALS
+* FunkSVD
+* KNN
+* NMF
+* SVD++
+* Uniform Random
+* ALS
 
 
 # Installation
