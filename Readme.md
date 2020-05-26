@@ -46,9 +46,10 @@ myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_si
 ## Available Methods for FunkSVD
 
 ### set_hyperparameters():
-A method to set hyperparameters for searching parameter space. 
-Arguments are:\
-__initialization_method :__  how to initialize user and item embeddings
+
+A method to set hyperparameters for searching parameter space. Arguments:\
+
+__initialization_method :__  How to initialize user and item embeddings
 * random ( default )
 * he
 * normal
@@ -58,29 +59,47 @@ __n_latent :__ Length of user and item embeddings. Default is 10\
 __learning_rate :__ Learning rate of the model. Default is 0.01\
 __regularization :__ Regularization rate of the model. DEfault is 0.1\
 __early_stopping :__ Number of epochs to stop if test error doesn't improve. Default is False.\
-__init_mean :__ initialization mean if initialization method is normal.\
-__init_std :__ initialization standard deviation if initialization is normal\
+__init_mean :__ Initialization mean if initialization method is normal.\
+__init_std :__ Initialization standard deviation if initialization is normal\
 
-_train_test_split(rated_count, movie_ratio_to_be_splitted, test_split):_
-A function to perform train test split.
 
-_fit():_
-Trains FunkSVD model.
+### fit():
 
-_get_recommendation_for_existing_user(user_id, howMany):_
-Gets howMany recommendations for given user_id.
+Trains FunkSVD model.Arguments:\
 
-_get_recommendation_for_new_user(user_ratings, similarity_measure,_
-_howManyUsers, howManyItems):_ Gets recommendations for new user by a given similarity measure. Similarity measures can be Cosine Similarity, Pearson Correlation, Adjusted Cosine Similarity, Weighted Cosine Similarity, Constrained Pearson Correlation, Mean Squared Difference.
+__data__ : Training data as numpy array.\
+__test_split__ : Split data into train and test set. Default is True.
+__test_portion__ : Portion of test set. Default is 0.10.
+__search_parameter_space__ : If true, data will not split into train and test sets again.  
 
-_get_similar_products(item_id, howMany):_
-Gets howMany similar items to a given item.
+### get_recommendation_for_existing_user():
 
-_novelty(recommendation_list):_
-Returns novelty of a given recommendation list.
+Gets recommendations for existing user that are not rated by user. Arguments:\
+__user_id :__ Existing user id
+__howMany :__ Count of recommended items to be returned. Default is 10.
 
-_precision_recall_at_k(threshold, k):_
-Returns precision and recall values of recommended items at k.
+### get_recommendation_for_new_user(): 
+
+Gets recommendations for new user depending on given similarity measure. Arguments:\
+
+__user_ratings :__ A python dictionary of items and corresponding scores.
+
+__similarity_measure :__ Similarity measures can be:
+* Cosine Similarity
+* Pearson Correlation
+* Adjusted Cosine Similarity
+* Weighted Cosine Similarity
+* Constrained Pearson Correlation
+* Mean Squared Difference.
+
+__howManyUsers :__ Count of most similar users to be used for recommendation. Default is 3
+__howManyItems :__ Count of recommended items to be returned. Default is 5.
+
+### get_similar_products():
+Gets most similar items. Arguments:
+__item_id :__ Id of the item.
+__howMany :__ Count of similar items to be returned.
+
 
 ### Note
 This library is created as a part of AI Projects program @ inzva. You can see more at inzva.com
