@@ -73,6 +73,7 @@ myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_si
 ### get_recommendation_for_existing_user():
 
 >Gets recommendations for existing user that are not rated by user. Arguments:
+
 > __user_id :__ Existing user id
 
 > __howMany :__ Count of recommended items to be returned. Default is 10.
@@ -82,6 +83,7 @@ myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_si
 >Gets recommendations for new user depending on given similarity measure. Arguments:
 
 > __user_ratings :__ A python dictionary of items and corresponding scores.
+
 > __similarity_measure :__ Similarity measures can be:
 > * cosine_similarity
 > * pearson_correlation
@@ -96,6 +98,7 @@ myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_si
 
 ### get_similar_products():
 >Gets most similar items. Arguments:
+
 > __item_id :__ Id of the item.
 
 > __howMany :__ Count of similar items to be returned.
