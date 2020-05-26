@@ -47,11 +47,11 @@ myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_si
 
 ### set_hyperparameters():
 A method to set hyperparameters for searching parameter space. 
-Arguments:
+Arguments are:
 1. initialization_method
-            1. random ( default )
-            2. he
-            3. random
+  1. random ( default )
+  2. he
+  3. random
 2. max_epoch
 Available initialization techniques are: Random initializer, Normal initializer and He initializer. init_mean and init_sd parameters are used in Normal Initializer as mean and standard deviation.
 
