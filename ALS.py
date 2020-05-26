@@ -36,7 +36,7 @@ class ALS():
         # randomize users
         for user in range(self.ratings.shape[0]):
             test_index = np.random.choice(
-                np.flatnonzero(self.ratings[user]), size = 5, replace = False)
+                np.flatnonzero(self.ratings[user]), size = 3, replace = False)
             train[user, test_index] = 0.0
             test[user, test_index] = self.ratings[user, test_index]
             test_set_size_counter += len(test_index)
@@ -58,7 +58,8 @@ class ALS():
         self.item_factors = np.random.random((self.n_item, self.n_factors))
         self.test_mse_record = []
         self.train_mse_record = []
-        for _ in range(self.n_iterations):
+        print("Training has started.")
+        for n in range(self.n_iterations):
             self.user_factors = self._als_step(self.train, self.user_factors, self.item_factors)
             self.item_factors = self._als_step(self.train.T, self.item_factors, self.user_factors)
             predictions = self.predict()
@@ -66,6 +67,10 @@ class ALS():
             predictions[predictions > 5] = 5
             test_mse = self.compute_mse(self.test, predictions)
             train_mse = self.compute_mse(self.train, predictions)
+            if(n % 10 == 0):
+                print("Iteration number ", n)
+                print("Train error is: ", train_mse)
+                print("Test error is: ", test_mse)
             self.test_mse_record.append(test_mse)
             self.train_mse_record.append(train_mse)
         return self
@@ -83,7 +88,7 @@ class ALS():
         pred = self.user_factors.dot(self.item_factors.T)
         return pred
 
-    @staticmethod
+
     def mean_squared_difference(a, b):
         summation = 0
         n = len(a)
@@ -92,7 +97,7 @@ class ALS():
             squared_difference = difference**2
             summation = summation + squared_difference
         MSE = summation/n
-        return MSE
+        return np.sqrt(MSE)
 
     def _calculate_similarity(self, new_user):
         unique_user_ids = np.unique(self.data[:,0])
@@ -109,7 +114,6 @@ class ALS():
             user_information_index = int(self.user_ids_old_new[self.user_ids_old_new[:,0] == uid][:,1])
             unique_user_rating = list(user_ratings[user_information_index])
             unique_user_rating = [ int(x) for x in unique_user_rating]
-            #mse = int((mean_squared_error(list(unique_user_rating), new_user_ratings)))
             mse = ALS.mean_squared_difference(list(unique_user_rating), new_user_ratings)
             sim = [uid, user_information_index, mse]
             self.similarities.append(sim)
@@ -122,17 +126,17 @@ class ALS():
         users_to_be_used = self.similarities[:howManyUsers]
 
         user_indexes = (list(users_to_be_used[:,1]))
-        user_indexes = [ int(x) for x in user_indexes]
+        user_indexes = [int(x) for x in user_indexes]
 
         user_rating_matrix = self.ratings[user_indexes,]
         recommended_items_with_new_id = np.where(user_rating_matrix > 3.5)[1]
         indices = np.random.choice(len(recommended_items_with_new_id), howManyItems, replace=False)
         recommended_items_with_new_id = recommended_items_with_new_id[indices]
         recommended_items_with_old_id = self.item_ids_old_new[np.isin(self.item_ids_old_new[:,1], recommended_items_with_new_id)][:,0]
-        return recommended_items_with_old_id
+        return(recommended_items_with_old_id)
 
 
     def compute_mse(self, y_true, y_pred):
         mask = np.nonzero(y_true)
-        mse = mean_squared_error(y_true[mask], y_pred[mask])
+        mse = ALS.mean_squared_difference(y_true[mask], y_pred[mask])
         return mse
