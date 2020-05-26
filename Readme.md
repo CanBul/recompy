@@ -18,9 +18,9 @@ Current version supports algorithms below:
 
 
 # Installation
-
+```shell
 pip install recompy
-
+```
 # Usage
 
 ```python
