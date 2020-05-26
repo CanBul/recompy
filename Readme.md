@@ -43,16 +43,23 @@ myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_si
                                        howManyUsers = 1, howManyItems = 5)
 ```
 
-## Available Methods
+## Available Methods for FunkSVD
 
 ### set_hyperparameters():
 A method to set hyperparameters for searching parameter space. 
 Arguments are:
-1. initialization_method
-  1. random ( default )
-  2. he
-  3. random
-2. max_epoch
+1. initialization_method : how to initialize user and item embeddings
+   1. random ( default )
+   2. he
+   3. normal
+2. max_epoch : Epoch count to train model. Default is 5. 
+3. n_latent : Length of user and item embeddings. Default is 10
+4. learning_rate : Learning rate of the model. Default is 0.01
+5. regularization : Regularization rate of the model. DEfault is 0.1
+6. early_stopping : Number of epochs to stop if test error doesn't improve. Default is False.
+7. init_mean: initialization mean if initialization method is normal.
+8. init_std: initialization standard deviation if initialization is normal
+
 Available initialization techniques are: Random initializer, Normal initializer and He initializer. init_mean and init_sd parameters are used in Normal Initializer as mean and standard deviation.
 
 _train_test_split(rated_count, movie_ratio_to_be_splitted, test_split):_
