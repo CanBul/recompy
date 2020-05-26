@@ -43,11 +43,16 @@ myFunk.get_recommendation_for_new_user(new_user, similarity_measure = 'cosine_si
                                        howManyUsers = 1, howManyItems = 5)
 ```
 
-## Functions
+## Available Methods
 
-_set_hyperparameters(initialization_method, max_epoch, n_latent,_
-_learning_rate, regularization, early_stopping, init_mean_ init_sd):
-A function to set hyperparameters. Available initialization techniques are: Random initializer, Normal initializer and He initializer. init_mean and init_sd parameters are used in Normal Initializer as mean and standard deviation.
+### set_hyperparameters():
+A method to set hyperparameters for searching parameter space. 
+Arguments:
+1. initialization_method
+            1. random ( default )
+            2. he
+            3. random
+Available initialization techniques are: Random initializer, Normal initializer and He initializer. init_mean and init_sd parameters are used in Normal Initializer as mean and standard deviation.
 
 _train_test_split(rated_count, movie_ratio_to_be_splitted, test_split):_
 A function to perform train test split.
