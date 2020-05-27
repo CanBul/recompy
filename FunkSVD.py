@@ -8,19 +8,308 @@ import numpy as np
 import copy
 import bisect
 
+class SVDpp():
+    def __init__(self):
+        self.set_hyperparameters()
+
+    def set_hyperparameters(self, initialization_method='random', init_mean=0, init_std=1,  biased=False, n_latent=20, n_epochs=20,
+                 lr_all=.007, reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None,
+                 lr_qi=None, lr_yj=None, reg_bu=None, reg_bi=None, reg_pu=None,
+                 reg_qi=None, reg_yj=None, random_state=None, verbose=False):
+
+        self.n_latent = n_latent
+        self.n_epochs = n_epochs
+        self.biased = biased
+        self.initialization_method = initialization_method
+        self.init_mean = init_mean
+        self.init_std = init_std
+        self.lr_bu = lr_bu if lr_bu is not None else lr_all
+        self.lr_bi = lr_bi if lr_bi is not None else lr_all
+        self.lr_pu = lr_pu if lr_pu is not None else lr_all
+        self.lr_qi = lr_qi if lr_qi is not None else lr_all
+        self.lr_yj = lr_yj if lr_yj is not None else lr_all
+        self.reg_bu = reg_bu if reg_bu is not None else reg_all
+        self.reg_bi = reg_bi if reg_bi is not None else reg_all
+        self.reg_pu = reg_pu if reg_pu is not None else reg_all
+        self.reg_qi = reg_qi if reg_qi is not None else reg_all
+        self.reg_yj = reg_yj if reg_yj is not None else reg_all
+        self.random_state = random_state
+        self.verbose = verbose
+
+    def __set_data(self, data, test_portion):
+
+        # get distinct users, items and user_existing_ratings, items_existing_users
+        self.user_existing_ratings = {}
+        self.items_rated_by_users = {}
+        self.user_ids = []
+        self.item_ids = []
+        self.all_ratings_in_train = 0
+
+        np.random.shuffle(data)
+
+        # variables for train and test split
+        user_dictionary = {}
+        item_dictionary = {}
+
+        self.user_n_ratings = {}
+        self.item_n_ratings = {}
+
+        self.train_data = []
+        self.test_data = []
+
+        self.train_data_user_ids = []
+        self.train_data_item_ids = []
+        self.test_data_user_ids = []
+        self.test_data_item_ids = []
+
+        for user, item, score in data:
+            # Unique users and items
+
+            try:
+                user = int(user)
+            except:
+                pass
+            try:
+                item = int(item)
+            except:
+                pass
+
+            user = str(user)
+            item = str(item)
+            score = float(score)
+
+            if user not in self.user_existing_ratings:
+                self.user_ids.append(user)
+            if item not in self.items_rated_by_users:
+                self.item_ids.append(item)
+
+            self.items_rated_by_users.setdefault(item, []).append(user)
+            self.user_existing_ratings.setdefault(user, []).append(item)
+
+            ratio = len(self.test_data) / (len(self.train_data)+0.001)
+
+            if self.test_split:
+                # train and test set
+                user_dictionary.setdefault(user, 0)
+                item_dictionary.setdefault(item, 0)
+
+                if user_dictionary[user] * test_portion >= 1 and item_dictionary[item] * test_portion >= 1 and ratio <= test_portion+0.02:
+
+                    self.test_data.append([user, item, score])
+                    if user not in self.test_data_user_ids: self.test_data_user_ids.append(user)
+                    if item not in self.train_data_item_ids: self.test_data_item_ids.append(item)
+
+                    try: self.user_n_ratings[user] += 1
+                    except KeyError: self.user_n_ratings.setdefault(user, 1)
+                    try: self.item_n_ratings[item] += 1
+                    except KeyError: self.item_n_ratings.setdefault(item, 1)
+
+                    user_dictionary[user] -= 1
+                    item_dictionary[item] -= 1
+
+                else:
+                    self.train_data.append([user, item, score])
+                    self.all_ratings_in_train += score
+                    if user not in self.train_data_user_ids: self.train_data_user_ids.append(user)
+                    if item not in self.train_data_item_ids: self.train_data_item_ids.append(item)
+
+                    try: self.user_n_ratings[user] += 1
+                    except KeyError: self.user_n_ratings.setdefault(user, 1)
+                    try: self.item_n_ratings[item] += 1
+                    except KeyError: self.item_n_ratings.setdefault(item, 1)
+
+                    user_dictionary[user] += 1
+                    item_dictionary[item] += 1
+            else:
+                self.train_data.append([user, item, score])
+                self.all_ratings_in_train += score
+                if user not in self.train_data_user_ids: self.train_data_user_ids.append(user)
+                if item not in self.train_data_item_ids: self.train_data_item_ids.append(item)
+
+                try: self.user_n_ratings[user] += 1
+                except KeyError: self.user_n_ratings.setdefault(user, 1)
+                try: self.item_n_ratings[item] += 1
+                except KeyError: self.item_n_ratings.setdefault(item, 1)
+
+        print('Your data has {} distinct users and {} distinct items.'.format(
+            len(self.user_ids), len(self.item_ids)))
+
+        if len(self.test_data) < 1 and self.test_split:
+            self.test_split = False
+            self.early_stopping = False
+            print("Training set doesn't have enough data for given test portion.")
+
+        if self.test_split:
+
+            print('Your data has been split into train and test set.')
+            print('Length of training set is {}. Length of Test set is {}'.format(
+                len(self.train_data), len(self.test_data)))
+        else:
+
+            print('Your data has no test set.')
+            print('Length of training set is {}'.format(len(self.train_data)))
+
+    def fit(self, data,test_split=True, test_portion=0.1, search_parameter_space=False):
+        lr_bu = self.lr_bu
+        lr_bi = self.lr_bi
+        lr_pu = self.lr_pu
+        lr_qi = self.lr_qi
+        lr_yj = self.lr_yj
+
+        reg_bu = self.reg_bu
+        reg_bi = self.reg_bi
+        reg_pu = self.reg_pu
+        reg_qi = self.reg_qi
+        reg_yj = self.reg_yj
+
+        if not search_parameter_space:
+
+            self.test_split = test_split
+            self.__set_data(data, test_portion)
+
+        print('Initializing features for Users and Items...')
+        initial = initializer(self.user_ids, self.item_ids, self.initialization_method,
+                              self.n_latent, self.init_mean, self.init_std)
+
+        self.pu, self.qi = initial.initialize_latent_vectors(initalization_method='normal')
+        _, self.yj = initial.initialize_latent_vectors(initalization_method='normal')
+
+        self.bu = dict([(key, 0) for key in self.train_data_user_ids])
+        self.bi = dict([(key, 0) for key in self.train_data_item_ids])
+
+        if not self.biased:
+           global_mean = 0
+        else:
+            global_mean = self.all_ratings_in_train / len(self.train_data)
+
+        for current_epoch in range(self.n_epochs):
+            if self.verbose:
+                print(" processing epoch {}".format(current_epoch))
+
+            for u, i, r in self.train_data:
+
+                # items rated by u
+                self.Iu = [items for items in self.user_existing_ratings[u]]
+                self.sqrt_Iu = np.sqrt(len(self.Iu))
+
+                # implicit feedback
+                self.u_impl_fdb = np.zeros(self.n_latent, np.double)
+                for j in self.Iu:
+                    for f in range(self.n_latent):
+                        self.u_impl_fdb[f] += self.yj[j][f] / self.sqrt_Iu
+
+                # compute current error
+                dot = 0
+                for f in range(self.n_latent):
+                    dot += self.qi[i][f] * (self.pu[u][f] + self.u_impl_fdb[f])
+
+                err = r - (global_mean + self.bu[u] + self.bi[i] + dot)
+
+                # update biases
+                self.bu[u] += lr_bu * (err - reg_bu * self.bu[u])
+                self.bi[i] += lr_bi * (err - reg_bi * self.bi[i])
+
+                # update factors
+                for f in range(self.n_latent):
+                    
+                    puf = self.pu[u][f]
+                    qif = self.qi[i][f]
+                    self.pu[u][f] += lr_pu * (err * qif - reg_pu * puf)
+                    self.qi[i][f] += lr_qi * (err * puf - reg_qi * qif)
+                    for j in self.Iu:
+                        self.yj[j][f] += lr_yj * (err * qif / self.sqrt_Iu -
+                                             reg_yj * self.yj[j][f])
+            # Calculate errors
+            #error_counter += 1
+            train_error = Test.rmse_error(
+                self.train_data, self.pu, self.qi)
+
+            # Show error to Client
+            if self.test_split:
+                test_error = Test.rmse_error(
+                    self.test_data, self.pu, self.qi)
+                print('Epoch Number: {}/{} Training RMSE: {:.2f} Test RMSE: {}'.format(current_epoch+1, self.n_epochs,
+                                                                                        train_error, test_error))
+
+            else:
+                print('Epoch Number: {}/{} Training RMSE: {:.2f}'.format(current_epoch+1, self.n_epochs,
+                                                                            train_error))
+
+            self.bu = self.bu
+            self.bi = self.bi
+            self.pu = self.pu
+            self.qi = self.qi
+            self.yj = self.yj
+
+    def get_recommendation_for_existing_user(self, user_id, howMany=10):
+        result_list = []
+        # this might be more effective using matrix multiplication
+        for item in self.item_ids:
+            # if user did not already rate the item
+            if item not in self.user_existing_ratings[user_id]:
+                prediction = np.dot(
+                    self.pu[user_id], self.qi[item])
+                bisect.insort(result_list, [prediction, item])
+
+        return [x[1] for x in result_list[::-1][0:howMany]]
+
+    def get_recommendation_for_new_user(self, user_ratings,
+                                        similarity_measure='mean_squared_difference', howManyUsers=3, howManyItems=5):
+
+        # Get user predictions on same movies
+        user_predictions = self.__user_prediction_for_same_movies(user_ratings)
+        # Find most most similar user_ids
+        user_ids = Similarities.get_most_similar_users(
+            user_ratings, user_predictions, similarity_measure, howManyUsers)
+
+        result_list = []
+        # get user features for users who are most similar to given new user
+        for user in user_ids:
+            for item, item_feature in self.qi.items():
+                # predict ratings for most similar users
+                prediction = np.dot(
+                    self.pu[user], item_feature)
+                bisect.insort(result_list, [prediction, item])
+
+        # remove duplicates
+        return_list = []
+        for pair in result_list:
+            if len(return_list) >= howManyItems:
+                break
+            if pair[1] in return_list:
+                continue
+
+            return_list.append(pair[1])
+
+        return return_list
+
+    def __user_prediction_for_same_movies(self, user_ratings):
+            result = {}
+            for key in user_ratings:
+                if key not in self.qi:
+                    continue
+
+                for user in self.pu:
+                    result.setdefault(user, []).append(
+                        np.dot(self.pu[user], self.qi[key]))
+
+            return result
+
+
+
 class NMF():
     def __init__(self):
         self.set_hyperparameters()
 
-    def set_hyperparameters(self, initialization_method='random',n_latent=15, n_epochs=30, biased=False, reg_pu=.06,
-                 reg_qi=.06, reg_bu=.02, reg_bi=.02, lr_bu=.005, lr_bi=.005,random_state=None, verbose=False):
+    def set_hyperparameters(self, initialization_method='random',n_latent=15, n_epochs=30, biased=False, reg_user_features=.06,
+                 reg_item_features=.06, reg_bu=.02, reg_bi=.02, lr_bu=.005, lr_bi=.005,random_state=None, verbose=False):
 
         self.n_latent = n_latent
         self.initialization_method = initialization_method
         self.n_epochs = n_epochs
         self.biased = biased
-        self.reg_pu = reg_pu
-        self.reg_qi = reg_qi
+        self.reg_user_features = reg_user_features
+        self.reg_item_features = reg_item_features
         self.lr_bu = lr_bu
         self.lr_bi = lr_bi
         self.reg_bu = reg_bu
@@ -152,7 +441,7 @@ class NMF():
         initial = initializer(self.user_ids, self.item_ids, self.initialization_method,
                               self.n_latent, 0,0)
 
-        pu, qi = initial.initialize_latent_vectors()
+        user_features, item_features = initial.initialize_latent_vectors()
         bu = dict([(key, 0) for key in self.train_data_user_ids])
         bi = dict([(key, 0) for key in self.train_data_item_ids])
 
@@ -177,7 +466,7 @@ class NMF():
                 # compute current estimation and error
                 dot = 0  # <q_i, p_u>
                 for f in range(self.n_latent):
-                    dot += pu[u][f] * qi[i][f]
+                    dot += user_features[u][f] * item_features[i][f]
                 est = global_mean + bu[u] + bi[i] + dot
                 err = r - est
 
@@ -188,34 +477,34 @@ class NMF():
 
                 # Compute numerators and denominators
                 for f in range(self.n_latent):
-                    self.user_num[u][f] += qi[i][f] * r
-                    self.user_denom[u][f] += qi[i][f] * est
-                    self.item_num[i][f] += pu[u][f] * r
-                    self.item_denom[i][f] += pu[u][f] * est
+                    self.user_num[u][f] += item_features[i][f] * r
+                    self.user_denom[u][f] += item_features[i][f] * est
+                    self.item_num[i][f] += user_features[u][f] * r
+                    self.item_denom[i][f] += user_features[u][f] * est
 
             # Update user factors
             for u in self.train_data_user_ids:
                 n_ratings = self.user_n_ratings[u]
                 for f in range(self.n_latent):
-                    self.user_denom[u][f] += n_ratings * self.reg_pu * pu[u][f]
-                    pu[u][f] *= self.user_num[u][f] / self.user_denom[u][f]
+                    self.user_denom[u][f] += n_ratings * self.reg_user_features * user_features[u][f]
+                    user_features[u][f] *= self.user_num[u][f] / self.user_denom[u][f]
 
             # Update item factors
             for i in self.train_data_item_ids:
                 n_ratings = self.item_n_ratings[i]
                 for f in range(self.n_latent):
-                    self.item_denom[i][f] += n_ratings * self.reg_qi * qi[i][f]
-                    qi[i][f] *= self.item_num[i][f] / self.item_denom[i][f]
+                    self.item_denom[i][f] += n_ratings * self.reg_item_features * item_features[i][f]
+                    item_features[i][f] *= self.item_num[i][f] / self.item_denom[i][f]
 
             # Calculate errors
             #error_counter += 1
             train_error = Test.rmse_error(
-                self.train_data, pu, qi)
+                self.train_data, user_features, item_features)
 
             # Show error to Client
             if self.test_split:
                 test_error = Test.rmse_error(
-                    self.test_data, pu, qi)
+                    self.test_data, user_features, item_features)
                 print('Epoch Number: {}/{} Training RMSE: {:.2f} Test RMSE: {}'.format(current_epoch+1, self.n_epochs,
                                                                                         train_error, test_error))
 
@@ -225,8 +514,8 @@ class NMF():
 
         self.bu = bu
         self.bi = bi
-        self.pu = pu
-        self.qi = qi
+        self.user_features = user_features
+        self.item_features = item_features
 
 
     def get_recommendation_for_existing_user(self, user_id, howMany=10):
@@ -236,10 +525,52 @@ class NMF():
             # if user did not already rate the item
             if item not in self.user_existing_ratings[user_id]:
                 prediction = np.dot(
-                    self.pu[user_id], self.qi[item])
+                    self.user_features[user_id], self.item_features[item])
                 bisect.insort(result_list, [prediction, item])
 
         return [x[1] for x in result_list[::-1][0:howMany]]
+
+    def get_recommendation_for_new_user(self, user_ratings,
+                                        similarity_measure='mean_squared_difference', howManyUsers=3, howManyItems=5):
+
+        # Get user predictions on same movies
+        user_predictions = self.__user_prediction_for_same_movies(user_ratings)
+        # Find most most similar user_ids
+        user_ids = Similarities.get_most_similar_users(
+            user_ratings, user_predictions, similarity_measure, howManyUsers)
+
+        result_list = []
+        # get user features for users who are most similar to given new user
+        for user in user_ids:
+            for item, item_feature in self.item_features.items():
+                # predict ratings for most similar users
+                prediction = np.dot(
+                    self.user_features[user], item_feature)
+                bisect.insort(result_list, [prediction, item])
+
+        # remove duplicates
+        return_list = []
+        for pair in result_list:
+            if len(return_list) >= howManyItems:
+                break
+            if pair[1] in return_list:
+                continue
+
+            return_list.append(pair[1])
+
+        return return_list
+
+    def __user_prediction_for_same_movies(self, user_ratings):
+            result = {}
+            for key in user_ratings:
+                if key not in self.item_features:
+                    continue
+
+                for user in self.user_features:
+                    result.setdefault(user, []).append(
+                        np.dot(self.user_features[user], self.item_features[key]))
+
+            return result
 
 
 class FunkSVD():
