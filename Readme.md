@@ -13,6 +13,11 @@ Current version supports algorithms below:
 * SVD++
 * ALS
 
+In upcoming version:
+* Approximate Nearest Neighbors
+* Framework refactors
+will come.
+
 Recompy also comes bundled with MovieLens data which consists of 100.000 user, rating pair.
 
 # Installation
