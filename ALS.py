@@ -1,5 +1,5 @@
 import numpy as np
-
+from Similarities import Similarities
 
 class ALS():
 
