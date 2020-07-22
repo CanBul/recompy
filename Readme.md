@@ -14,7 +14,7 @@ Current version supports algorithms below:
 * ALS
 
 In upcoming version:
-* Approximate Nearest Neighbors
+* Approximate Nearest Neighbors for better performance
 * Framework refactors
 will come.
 
