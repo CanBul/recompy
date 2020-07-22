@@ -100,6 +100,7 @@ class ALS():
         return np.sqrt(MSE)
 
     def _calculate_similarity(self, new_user, similarity_measure):
+        #todo add similarty
         unique_user_ids = np.unique(self.data[:,0])
         similarities = []
         new_user_items = list(new_user.keys())
