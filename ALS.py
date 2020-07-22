@@ -99,7 +99,7 @@ class ALS():
         MSE = summation/n
         return np.sqrt(MSE)
 
-    def _calculate_similarity(self, new_user):
+    def _calculate_similarity(self, new_user, similarity_measure):
         unique_user_ids = np.unique(self.data[:,0])
         similarities = []
         new_user_items = list(new_user.keys())
@@ -119,8 +119,8 @@ class ALS():
             self.similarities.append(sim)
 
 
-    def get_recommendation_for_new_user(self, new_user, howManyUsers, howManyItems):
-        self._calculate_similarity(new_user)
+    def get_recommendation_for_new_user(self, new_user, similarity_measure='mean_squared_difference', howManyUsers, howManyItems):
+        self._calculate_similarity(new_user,similarity_measure)
         self.similarities = np.asarray(self.similarities)
         self.similarities = self.similarities[self.similarities[:,2].argsort()]
         users_to_be_used = self.similarities[:howManyUsers]
