@@ -1,5 +1,7 @@
 import numpy as np
 from Similarities import Similarities
+from Initializer import initializer
+
 
 class ALS():
 
@@ -7,6 +9,12 @@ class ALS():
         self.regularization = regularization
         self.n_iterations = n_iterations
         self.n_factors = n_factors
+
+    def set_hyperparameters(self, initialization_method='random', n_latent, n_epochs, regularization):
+        self.initialization_method = initalization_method
+        self.n_latent = n_latent
+        self.n_epochs = n_epochs
+        self.regularization = regularization
 
     def _set_data(self):
         n_users = len(np.unique(self.data[:,0]))
@@ -56,7 +64,7 @@ class ALS():
         self.test_mse_record = []
         self.train_mse_record = []
         print("Training has started.")
-        for n in range(self.n_iterations):
+        for n in range(self.n_iterations): #epoch 
             self.user_factors = self._als_step(self.train, self.user_factors, self.item_factors)
             self.item_factors = self._als_step(self.train.T, self.item_factors, self.user_factors)
             predictions = self.predict()
@@ -65,7 +73,7 @@ class ALS():
             test_mse = self.compute_mse(self.test, predictions)
             train_mse = self.compute_mse(self.train, predictions)
             if(n % 10 == 0):
-                print("Iteration number ", n)
+                print("Epoch number ", n)
                 print("Train error is: ", train_mse)
                 print("Test error is: ", test_mse)
             self.test_mse_record.append(test_mse)
@@ -110,6 +118,7 @@ class ALS():
             unique_user_rating = list(user_ratings[user_information_index])
             unique_user_rating = [ int(x) for x in unique_user_rating]
             mse = ALS.mean_squared_difference(list(unique_user_rating), new_user_ratings)
+            #first parameter of get_most_similar_users should be dictionary
             similarities = Similarities.get_most_similar_users(list(unique_user_rating), new_user_ratings, similarity_measure, howManyUsers)
             sim = [uid, user_information_index, mse]
             self.similarities.append(sim)
@@ -124,7 +133,6 @@ class ALS():
                 prediction = np.dot(
                     self.pu[user_id], self.qi[item])
                 bisect.insort(result_list, [prediction, item])
-
         return [x[1] for x in result_list[::-1][0:howMany]]
 
     def get_recommendation_for_new_user(self, new_user, similarity_measure='mean_squared_difference', howManyUsers, howManyItems):
