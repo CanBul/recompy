@@ -8,7 +8,6 @@ class ALS():
         self.n_iterations = n_iterations
         self.n_factors = n_factors
 
-
     def _set_data(self):
         n_users = len(np.unique(self.data[:,0]))
         n_items = len(np.unique(self.data[:,1]))
@@ -24,7 +23,6 @@ class ALS():
             ratings[int(user_row_index), int(item_column_index)] = row[2]
 
         self.ratings = ratings
-
 
     def train_test_split(self, test_portion = 0.1):
         test = np.zeros(self.ratings.shape)
@@ -45,7 +43,6 @@ class ALS():
 
         assert np.all(train * test == 0)
         return train, test
-
 
     def fit(self, data, test_portion = 0.1):
         self.data = data
@@ -75,7 +72,6 @@ class ALS():
             self.train_mse_record.append(train_mse)
         return self
 
-
     def _als_step(self, ratings, solve_vecs, fixed_vecs):
         A = fixed_vecs.T.dot(fixed_vecs) + np.eye(self.n_factors) * self.regularization
         b = ratings.dot(fixed_vecs)
@@ -83,11 +79,9 @@ class ALS():
         solve_vecs = b.dot(A_inv)
         return solve_vecs
 
-
     def predict(self):
         pred = self.user_factors.dot(self.item_factors.T)
         return pred
-
 
     def mean_squared_difference(a, b):
         summation = 0
@@ -99,7 +93,7 @@ class ALS():
         MSE = summation/n
         return np.sqrt(MSE)
 
-    def _calculate_similarity(self, new_user, similarity_measure):
+    def _calculate_similarity(self, new_user, similarity_measure,howManyUsers):
         #todo add similarty
         unique_user_ids = np.unique(self.data[:,0])
         similarities = []
@@ -116,12 +110,25 @@ class ALS():
             unique_user_rating = list(user_ratings[user_information_index])
             unique_user_rating = [ int(x) for x in unique_user_rating]
             mse = ALS.mean_squared_difference(list(unique_user_rating), new_user_ratings)
+            similarities = Similarities.get_most_similar_users(list(unique_user_rating), new_user_ratings, similarity_measure, howManyUsers)
             sim = [uid, user_information_index, mse]
             self.similarities.append(sim)
 
+    def get_recommendation_for_existing_user(self, user_id, howMany=10):
+        #TODO: just ccopied from matrix_factorization.py
+        result_list = []
+        # this might be more effective using matrix multiplication
+        for item in self.item_ids:
+            # if user did not already rate the item
+            if item not in self.user_existing_ratings[user_id]:
+                prediction = np.dot(
+                    self.pu[user_id], self.qi[item])
+                bisect.insort(result_list, [prediction, item])
+
+        return [x[1] for x in result_list[::-1][0:howMany]]
 
     def get_recommendation_for_new_user(self, new_user, similarity_measure='mean_squared_difference', howManyUsers, howManyItems):
-        self._calculate_similarity(new_user,similarity_measure)
+        self._calculate_similarity(new_user,similarity_measure,howManyUsers)
         self.similarities = np.asarray(self.similarities)
         self.similarities = self.similarities[self.similarities[:,2].argsort()]
         users_to_be_used = self.similarities[:howManyUsers]
@@ -135,7 +142,6 @@ class ALS():
         recommended_items_with_new_id = recommended_items_with_new_id[indices]
         recommended_items_with_old_id = self.item_ids_old_new[np.isin(self.item_ids_old_new[:,1], recommended_items_with_new_id)][:,0]
         return(recommended_items_with_old_id)
-
 
     def compute_mse(self, y_true, y_pred):
         mask = np.nonzero(y_true)
