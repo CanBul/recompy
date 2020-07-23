@@ -1,15 +1,15 @@
 import numpy as np
 from Similarities import Similarities
-from Initializer import initializer
-
+#from Initializer import initializer
 
 class ALS():
 
     def __init__(self):
+        self.prediction_matrix = None
         self.set_hyperparameters()
 
-    def set_hyperparameters(self, initialization_method='random', n_latent, n_epochs, regularization):
-        self.initialization_method = initalization_method
+    def set_hyperparameters(self, initialization_method='random', n_latent=10, n_epochs=5, regularization=0.01):
+        self.initialization_method = initialization_method
         self.n_latent = n_latent
         self.n_epochs = n_epochs
         self.regularization = regularization
@@ -23,7 +23,7 @@ class ALS():
         self.user_ids_old_new = np.column_stack([np.unique(self.data[:,0]), new_user_ids])
         ratings = np.zeros((n_users, n_items))
         for i in range(0, self.data.shape[0]):
-            row = arr[i,:]
+            row = self.data[i,:]
             item_column_index = self.item_ids_old_new[self.item_ids_old_new[:,0] == row[1]][:,1]
             user_row_index = self.user_ids_old_new[self.user_ids_old_new[:,0] == row[0]][:,1]
             ratings[int(user_row_index), int(item_column_index)] = row[2]
@@ -33,9 +33,8 @@ class ALS():
         test = np.zeros(self.ratings.shape)
         train = self.ratings.copy()
         test_set_size = test_portion * self.rating_length
-        print(test_set_size)
+        #print(test_set_size)
         test_set_size_counter = 0
-
         # randomize users
         for user in range(self.ratings.shape[0]):
             test_index = np.random.choice(
@@ -45,7 +44,6 @@ class ALS():
             test_set_size_counter += len(test_index)
             if test_set_size_counter > test_set_size:
                 break
-
         assert np.all(train * test == 0)
         return train, test
 
@@ -56,19 +54,25 @@ class ALS():
         self.train, self.test = self.train_test_split(test_portion)
 
         self.n_user, self.n_item = self.train.shape
-        self.user_factors = np.random.random((self.n_user, self.n_latent))
-        self.item_factors = np.random.random((self.n_item, self.n_latent))
+        if self.initialization_method == 'random':
+            self.user_factors = np.random.random((self.n_user, self.n_latent))
+            self.item_factors = np.random.random((self.n_item, self.n_latent))
+        elif self.initalization_method == 'he':
+            pass
+        elif self.initialization_method == 'normal':
+            pass
+
         self.test_mse_record = []
         self.train_mse_record = []
         print("Training has started.")
-        for n in range(self.n_epochs): #epoch
+        for n in range(self.n_epochs):
             self.user_factors = self._als_step(self.train, self.user_factors, self.item_factors)
             self.item_factors = self._als_step(self.train.T, self.item_factors, self.user_factors)
-            predictions = self.predict()
-            predictions[predictions <= 0] = 0.5
-            predictions[predictions > 5] = 5
-            test_mse = self.compute_mse(self.test, predictions)
-            train_mse = self.compute_mse(self.train, predictions)
+            self.prediction_matrix = self.predict() # TODO: rename predictions -> self.prediction_matrix
+            #self.prediction_matrix[self.prediction_matrix <= 0] = 0.5 # TODO: find min and max values and replace with them OR remove this part!
+            #self.prediction_matrix[self.prediction_matrix > 5] = 5
+            test_mse = self.compute_mse(self.test, self.prediction_matrix)
+            train_mse = self.compute_mse(self.train, self.prediction_matrix)
             if(n % 10 == 0):
                 print("Epoch number ", n)
                 print("Train error is: ", train_mse)
@@ -98,30 +102,39 @@ class ALS():
         MSE = summation/n
         return np.sqrt(MSE)
 
-    def _calculate_similarity(self, new_user, similarity_measure,howManyUsers):
+    def _calculate_similarity(self, new_user,howManyUsers):
         #todo add similarty
         unique_user_ids = np.unique(self.data[:,0])
         similarities = []
         new_user_items = list(new_user.keys())
         new_user_ratings = list(new_user.values())
-
+        new_user_items = list(np.array(new_user_items).astype(float))
+        new_user_ratings = list(np.array(new_user_ratings).astype(float))
+        print(new_user_items)
         intersected_item_index = self.item_ids_old_new[np.isin(self.item_ids_old_new[:,0], new_user_items)][:,1]
         intersected_item_index = list(intersected_item_index)
         intersected_item_index = [ int(x) for x in intersected_item_index ]
-        user_ratings = self.ratings[:,list(intersected_item_index)]
+        print(intersected_item_index)
+        #user_ratings = self.ratings[:,list(intersected_item_index)] # burada prediction matrix neden kullanmadım?, kullanmazsam anlamsız oluyor.
+        user_ratings = self.prediction_matrix[:,list(intersected_item_index)]
+        print(user_ratings.shape)
         self.similarities = []
         for uid in unique_user_ids:
+            uid = int(uid)
             user_information_index = int(self.user_ids_old_new[self.user_ids_old_new[:,0] == uid][:,1])
             unique_user_rating = list(user_ratings[user_information_index])
             unique_user_rating = [ int(x) for x in unique_user_rating]
             mse = ALS.mean_squared_difference(list(unique_user_rating), new_user_ratings)
             #first parameter of get_most_similar_users should be dictionary
-            similarities = Similarities.get_most_similar_users(list(unique_user_rating), new_user_ratings, similarity_measure, howManyUsers)
+            dict_user_rating = dict((list(np.repeat(uid,len(unique_user_rating))), list(unique_user_rating)))
+            #similarities = Similarities.get_most_similar_users(new_user, dict_user_rating, similarity_measure='cosine_similarity', howMany=howManyUsers)
+            #print(similarities)
             sim = [uid, user_information_index, mse]
+            #sim = [uid, user_information_index, similarities]
             self.similarities.append(sim)
 
     def get_recommendation_for_existing_user(self, user_id, howMany=10):
-        #TODO: just ccopied from matrix_factorization.py
+        #TODO: just copied from matrix_factorization.py
         result_list = []
         # this might be more effective using matrix multiplication
         for item in self.item_ids:
@@ -132,9 +145,10 @@ class ALS():
                 bisect.insort(result_list, [prediction, item])
         return [x[1] for x in result_list[::-1][0:howMany]]
 
-    def get_recommendation_for_new_user(self, new_user, similarity_measure='mean_squared_difference', howManyUsers, howManyItems):
-        self._calculate_similarity(new_user,similarity_measure,howManyUsers)
+    def get_recommendation_for_new_user(self, new_user, howManyUsers, howManyItems):
+        self._calculate_similarity(new_user,howManyUsers)
         self.similarities = np.asarray(self.similarities)
+        print(self.similarities)
         self.similarities = self.similarities[self.similarities[:,2].argsort()]
         users_to_be_used = self.similarities[:howManyUsers]
 
@@ -146,7 +160,7 @@ class ALS():
         indices = np.random.choice(len(recommended_items_with_new_id), howManyItems, replace=False)
         recommended_items_with_new_id = recommended_items_with_new_id[indices]
         recommended_items_with_old_id = self.item_ids_old_new[np.isin(self.item_ids_old_new[:,1], recommended_items_with_new_id)][:,0]
-        return(recommended_items_with_old_id)
+        return recommended_items_with_old_id
 
     def compute_mse(self, y_true, y_pred):
         mask = np.nonzero(y_true)
