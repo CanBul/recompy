@@ -5,10 +5,8 @@ from Initializer import initializer
 
 class ALS():
 
-    def __init__(self, n_iterations, n_factors, regularization):
-        self.regularization = regularization
-        self.n_iterations = n_iterations
-        self.n_factors = n_factors
+    def __init__(self):
+        self.set_hyperparameters()
 
     def set_hyperparameters(self, initialization_method='random', n_latent, n_epochs, regularization):
         self.initialization_method = initalization_method
@@ -29,7 +27,6 @@ class ALS():
             item_column_index = self.item_ids_old_new[self.item_ids_old_new[:,0] == row[1]][:,1]
             user_row_index = self.user_ids_old_new[self.user_ids_old_new[:,0] == row[0]][:,1]
             ratings[int(user_row_index), int(item_column_index)] = row[2]
-
         self.ratings = ratings
 
     def train_test_split(self, test_portion = 0.1):
@@ -59,12 +56,12 @@ class ALS():
         self.train, self.test = self.train_test_split(test_portion)
 
         self.n_user, self.n_item = self.train.shape
-        self.user_factors = np.random.random((self.n_user, self.n_factors))
-        self.item_factors = np.random.random((self.n_item, self.n_factors))
+        self.user_factors = np.random.random((self.n_user, self.n_latent))
+        self.item_factors = np.random.random((self.n_item, self.n_latent))
         self.test_mse_record = []
         self.train_mse_record = []
         print("Training has started.")
-        for n in range(self.n_iterations): #epoch 
+        for n in range(self.n_epochs): #epoch
             self.user_factors = self._als_step(self.train, self.user_factors, self.item_factors)
             self.item_factors = self._als_step(self.train.T, self.item_factors, self.user_factors)
             predictions = self.predict()
@@ -81,7 +78,7 @@ class ALS():
         return self
 
     def _als_step(self, ratings, solve_vecs, fixed_vecs):
-        A = fixed_vecs.T.dot(fixed_vecs) + np.eye(self.n_factors) * self.regularization
+        A = fixed_vecs.T.dot(fixed_vecs) + np.eye(self.n_latent) * self.regularization
         b = ratings.dot(fixed_vecs)
         A_inv = np.linalg.inv(A)
         solve_vecs = b.dot(A_inv)
